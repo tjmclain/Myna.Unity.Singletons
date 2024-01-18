@@ -1,1 +1,1 @@
-A simple interface for creating and loading singleton objects that derive from 
+A simple interface for creating and loading singleton objects that derive from ScriptableObject or MonoBehaviour.
