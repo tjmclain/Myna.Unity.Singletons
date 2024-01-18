@@ -1,51 +1,54 @@
 ﻿using UnityEngine;
 
-public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+namespace Myna.Unity.Singletons
 {
-	private static T _instance;
-
-	public static bool IsInitialized => GetInstance() != null;
-
-	public T Instance
+	public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
 	{
-		get => GetInstance();
-		set => SetInstance(value);
-	}
+		private static T _instance;
 
-	public static implicit operator T(SingletonBehaviour<T> singleton)
-	{
-		return singleton.Instance;
-	}
+		public static bool IsInitialized => GetInstance() != null;
 
-	public void Initialize(T instance)
-	{
-		SetInstance(instance);
-	}
-
-	private static void SetInstance(T instance)
-	{
-		SingletonUtility.SetSingleton(instance);
-		_instance = instance;
-
-		if (instance != null && instance.transform.parent == null)
+		public T Instance
 		{
-			DontDestroyOnLoad(instance.gameObject);
+			get => GetInstance();
+			set => SetInstance(value);
 		}
-	}
 
-	private static T GetInstance()
-	{
-		if (_instance != null)
+		public static implicit operator T(SingletonBehaviour<T> singleton)
 		{
+			return singleton.Instance;
+		}
+
+		public void Initialize(T instance)
+		{
+			SetInstance(instance);
+		}
+
+		private static void SetInstance(T instance)
+		{
+			SingletonUtility.SetSingleton(instance);
+			_instance = instance;
+
+			if (instance != null && instance.transform.parent == null)
+			{
+				DontDestroyOnLoad(instance.gameObject);
+			}
+		}
+
+		private static T GetInstance()
+		{
+			if (_instance != null)
+			{
+				return _instance;
+			}
+
+			_instance = SingletonUtility.GetOrInitSingletonBehaviour<T>();
 			return _instance;
 		}
 
-		_instance = SingletonUtility.GetOrInitSingletonBehaviour<T>();
-		return _instance;
-	}
-
-	protected virtual void Awake()
-	{
-		SetInstance(this);
+		protected virtual void Awake()
+		{
+			SetInstance(this);
+		}
 	}
 }
