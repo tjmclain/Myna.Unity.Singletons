@@ -1,0 +1,9 @@
+{
+	"name": "com.myna.unity.singletons",
+	"version": "1.0.0",
+	"displayName": "Myna Singletons",
+	"unity": "2022.1",
+	"dependencies": {
+		"com.unity.addressables": "1.21.19"
+	}
+}
