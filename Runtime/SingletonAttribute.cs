@@ -10,7 +10,7 @@ namespace Myna.Unity.Singletons
 		public enum AssetSource
 		{
 			Resources,
-			Addressables // TODO: not implemented
+			Addressables
 		}
 
 		public string Path { get; set; } = string.Empty;
