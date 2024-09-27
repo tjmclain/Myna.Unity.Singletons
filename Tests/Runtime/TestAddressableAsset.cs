@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Myna.Unity.Singletons;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "TestAddressableAsset", menuName = "Testing/TestAddressableAsset")]
-[Singleton("Assets/Packages/Myna.Unity.Singletons/Tests/Addressables/TestAddressableAsset.asset")]
-public class TestAddressableAsset : SingletonAsset<TestSingletonAsset>
+[Singleton("Tests/Addressables/TestAddressableAsset.asset")]
+[CreateAssetMenu(fileName = "TestAddressableAsset", menuName = "Myna/Singletons/Testing/TestAddressableAsset")]
+public class TestAddressableAsset : SingletonAsset<TestAddressableAsset>
 {
-    public bool TheBestFinalFantasyIsTen = true;
+
 }

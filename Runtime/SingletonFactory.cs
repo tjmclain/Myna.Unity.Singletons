@@ -18,9 +18,13 @@ namespace Myna.Unity.Singletons
                 return default;
             }
 
-            var handle = Addressables.LoadAssetAsync<T>(attribute.Address);
-            var asset = handle.WaitForCompletion();
-            Addressables.Release(handle);
+            var asset = attribute.Source switch
+            {
+                SingletonAttribute.AssetSource.Resources => LoadAssetFromResources<T>(attribute.Address),
+                SingletonAttribute.AssetSource.Addressables => LoadAssetFromAddressables<T>(attribute.Address),
+                _ => null
+            };
+
             if (asset == null)
             {
                 Debug.LogError(
@@ -28,6 +32,30 @@ namespace Myna.Unity.Singletons
                 );
             }
             return asset;
+        }
+
+        private static T LoadAssetFromResources<T>(string path) where T : Object
+        {
+            return Resources.Load<T>(path);
+        }
+
+        private static T LoadAssetFromAddressables<T>(string address) where T : Object
+        {
+            if (typeof(Component).IsAssignableFrom(typeof(T)))
+            {
+                var handle = Addressables.LoadAssetAsync<GameObject>(address);
+                var go = handle.WaitForCompletion();
+                var asset = go.GetComponent(typeof(T)) as T;
+                Addressables.Release(handle);
+                return asset;
+            }
+            else
+            {
+                var handle = Addressables.LoadAssetAsync<T>(address);
+                var asset = handle.WaitForCompletion();
+                Addressables.Release(handle);
+                return asset;
+            }
         }
 
         public static async Task<T> LoadAssetAsync<T>() where T : Object
