@@ -1,54 +1,50 @@
-﻿using UnityEngine;
+﻿using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Myna.Unity.Singletons
 {
-	public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
-	{
-		private static T _instance;
+    public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+    {
+        private static T _instance;
 
-		public static bool IsInitialized => GetInstance() != null;
+        public T Instance
+        {
+            get => _instance;
+            set => SetInstance(value);
+        }
 
-		public T Instance
-		{
-			get => GetInstance();
-			set => SetInstance(value);
-		}
+        public static bool IsInitialized => _instance != null;
 
-		public static implicit operator T(SingletonBehaviour<T> singleton)
-		{
-			return singleton.Instance;
-		}
+        public static void SetInstance(T instance)
+        {
+            if (instance != null)
+            {
+                DontDestroyOnLoad(instance.gameObject);
+            }
+            _instance = instance;
+        }
 
-		public void Initialize(T instance)
-		{
-			SetInstance(instance);
-		}
+        public static T GetOrCreateInstance()
+        {
+            if (_instance != null)
+            {
+                return _instance;
+            }
 
-		private static void SetInstance(T instance)
-		{
-			SingletonUtility.SetSingleton(instance);
-			_instance = instance;
+            _instance = SingletonFactory.CreateInstance<T>();
+            return _instance;
+        }
 
-			if (instance != null && instance.transform.parent == null)
-			{
-				DontDestroyOnLoad(instance.gameObject);
-			}
-		}
+        public static async Task<T> InitializeAsync()
+        {
+            var instance = await SingletonFactory.CreateInstanceAsync<T>();
+            SetInstance(instance);
+            return instance;
+        }
 
-		private static T GetInstance()
-		{
-			if (_instance != null)
-			{
-				return _instance;
-			}
-
-			_instance = SingletonUtility.GetOrInitSingletonBehaviour<T>();
-			return _instance;
-		}
-
-		protected virtual void Awake()
-		{
-			SetInstance(this);
-		}
-	}
+        protected virtual void Awake()
+        {
+            SetInstance(this as T);
+        }
+    }
 }

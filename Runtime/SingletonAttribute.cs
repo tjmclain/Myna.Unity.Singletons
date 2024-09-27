@@ -1,29 +1,23 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 
 namespace Myna.Unity.Singletons
 {
-	[System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-	public class SingletonAttribute : System.Attribute
-	{
-		public enum AssetSource
-		{
-			Resources,
-			Addressables
-		}
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class SingletonAttribute : System.Attribute
+    {
+        public enum AssetSource
+        {
+            Resources,
+            Addressables
+        }
 
-		public string Path { get; set; } = string.Empty;
+        public AssetSource Source { get; set; } = AssetSource.Resources;
 
-		public AssetSource Source { get; set; } = AssetSource.Resources;
+        public string Address { get; set; } = string.Empty;
 
-		public SingletonAttribute() : this(string.Empty)
-		{
-		}
-
-		public SingletonAttribute(string path)
-		{
-			Path = path;
-		}
-	}
+        public SingletonAttribute(string address)
+        {
+            Address = address;
+        }
+    }
 }
