@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace Myna.Unity.Singletons
     {
         private static T _instance;
 
+        #region Properties
         public static T Instance
         {
             get => _instance;
@@ -14,7 +16,9 @@ namespace Myna.Unity.Singletons
         }
 
         public static bool IsInitialized => _instance != null;
+        #endregion Properties
 
+        #region Public Methods
         public static T GetOrCreateInstance()
         {
             if (_instance != null)
@@ -22,25 +26,27 @@ namespace Myna.Unity.Singletons
                 return _instance;
             }
 
-            _instance = SingletonFactory.LoadAsset<T>();
-            return _instance;
+            var instance = SingletonFactory.CreateAsset<T>();
+            SetInstance(instance);
+            return instance;
+        }
+
+        public static async Task<T> GetOrCreateInstanceAsync()
+        {
+            if (_instance != null)
+            {
+                return _instance;
+            }
+
+            var instance = await SingletonFactory.CreateAssetAsync<T>();
+            SetInstance(instance);
+            return instance;
         }
 
         public static void SetInstance(T instance)
         {
-            if (instance != null)
-            {
-                DontDestroyOnLoad(instance);
-            }
-
             _instance = instance;
         }
-
-        public static async Task<T> InitializeAsync()
-        {
-            var instance = await SingletonFactory.LoadAssetAsync<T>();
-            SetInstance(instance);
-            return instance;
-        }
+        #endregion Public Methods
     }
 }

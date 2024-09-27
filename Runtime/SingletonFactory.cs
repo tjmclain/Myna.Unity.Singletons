@@ -9,34 +9,110 @@ namespace Myna.Unity.Singletons
     {
         private static bool _applicationStateIsChanging = false;
 
-        public static T LoadAsset<T>() where T : Object
+        #region Public Methods
+        public static T CreateAsset<T>() where T : ScriptableObject
+        {
+            if (_applicationStateIsChanging)
+            {
+                Debug.LogWarning("CreateAsset: _applicationStateIsChanging");
+                return null;
+            }
+
+            var asset = Load<T>();
+            return asset != null ? asset : ScriptableObject.CreateInstance<T>();
+        }
+
+        public static async Task<T> CreateAssetAsync<T>() where T : ScriptableObject
+        {
+            if (_applicationStateIsChanging)
+            {
+                Debug.LogWarning("CreateAsset: _applicationStateIsChanging");
+                return null;
+            }
+
+            var asset = await LoadAsync<T>();
+            return asset != null ? asset : ScriptableObject.CreateInstance<T>();
+        }
+
+        public static T CreateBehaviour<T>() where T : Component
+        {
+            if (_applicationStateIsChanging)
+            {
+                Debug.LogWarning("CreateBehaviour: _applicationStateIsChanging");
+                return null;
+            }
+
+            var asset = Load<T>();
+            return asset != null
+                ? Object.Instantiate(asset)
+                : new GameObject(typeof(T).Name).AddComponent<T>();
+
+        }
+
+        public static async Task<T> CreateBehaviourAsync<T>() where T : Component
+        {
+            if (_applicationStateIsChanging)
+            {
+                Debug.LogWarning("CreateBehaviour: _applicationStateIsChanging");
+                return null;
+            }
+
+            var asset = await LoadAsync<T>();
+            return asset != null
+                ? Object.Instantiate(asset)
+                : new GameObject(typeof(T).Name).AddComponent<T>();
+
+        }
+        #endregion Public Methods
+
+        #region Private Methods
+        private static T Load<T>() where T : Object
         {
             var attribute = GetSingletonAttribute<T>();
             if (attribute == null)
             {
-                Debug.LogError($"LoadAsset: Type '{typeof(T)}' is missing a SingletonAttribute.");
-                return default;
+                Debug.LogWarning($"Load: attribute == null; type = {typeof(T)}");
+                return null;
             }
+
+            string address = attribute.Address;
 
             var asset = attribute.Source switch
             {
-                SingletonAttribute.AssetSource.Resources => LoadAssetFromResources<T>(attribute.Address),
-                SingletonAttribute.AssetSource.Addressables => LoadAssetFromAddressables<T>(attribute.Address),
+                SingletonAttribute.AssetSource.Resources => Resources.Load<T>(address),
+                SingletonAttribute.AssetSource.Addressables => LoadAssetFromAddressables<T>(address),
                 _ => null
             };
 
             if (asset == null)
             {
-                Debug.LogError(
-                    $"LoadAsset: Failed to load asset of type '{typeof(T)}' at address '{attribute.Address}.'"
-                );
+                Debug.LogWarning($"Load: asset == null; type = {typeof(T)}, address = {address}");
             }
             return asset;
         }
 
-        private static T LoadAssetFromResources<T>(string path) where T : Object
+        private static async Task<T> LoadAsync<T>() where T : Object
         {
-            return Resources.Load<T>(path);
+            var attribute = GetSingletonAttribute<T>();
+            if (attribute == null)
+            {
+                Debug.LogWarning($"LoadAsync: attribute == null; type = {typeof(T)}");
+                return null;
+            }
+
+            string address = attribute.Address;
+            var asset = attribute.Source switch
+            {
+                SingletonAttribute.AssetSource.Resources => await LoadAssetFromResourcesAsync<T>(attribute.Address),
+                SingletonAttribute.AssetSource.Addressables => await LoadAssetFromAddressablesAsync<T>(attribute.Address),
+                _ => await Task.FromResult<T>(null)
+            };
+
+            if (asset == null)
+            {
+                Debug.LogWarning($"LoadAsync: asset == null; type = {typeof(T)}, address = {address}");
+            }
+            return asset;
         }
 
         private static T LoadAssetFromAddressables<T>(string address) where T : Object
@@ -45,9 +121,9 @@ namespace Myna.Unity.Singletons
             {
                 var handle = Addressables.LoadAssetAsync<GameObject>(address);
                 var go = handle.WaitForCompletion();
-                var asset = go.GetComponent(typeof(T)) as T;
                 Addressables.Release(handle);
-                return asset;
+                return go != null && go.TryGetComponent(typeof(T), out Component component)
+                    ? component as T : null;
             }
             else
             {
@@ -58,57 +134,34 @@ namespace Myna.Unity.Singletons
             }
         }
 
-        public static async Task<T> LoadAssetAsync<T>() where T : Object
+        private static async Task<T> LoadAssetFromResourcesAsync<T>(string path) where T : Object
         {
-            var attribute = GetSingletonAttribute<T>();
-            if (attribute == null)
+            var request = Resources.LoadAsync<T>(path);
+            while (!request.isDone)
             {
-                Debug.LogError(
-                    $"LoadAssetAsync: Type '{typeof(T)}' is missing a SingletonAttribute."
-                );
-                return default;
+                await Task.Yield();
             }
-
-            var handle = Addressables.LoadAssetAsync<T>(attribute.Address);
-            await handle.Task;
-
-            var asset = handle.Result;
-            Addressables.Release(handle);
-            if (asset == null)
-            {
-                Debug.LogError(
-                    $"LoadAssetAsync: Failed to load asset of type '{typeof(T)}' at address '{attribute.Address}.'"
-                );
-            }
-            return asset;
+            return request.asset as T;
         }
 
-        public static T CreateInstance<T>() where T : Object
+        private static async Task<T> LoadAssetFromAddressablesAsync<T>(string address) where T : Object
         {
-            if (_applicationStateIsChanging)
+            if (typeof(Component).IsAssignableFrom(typeof(T)))
             {
-                Debug.Log(
-                    "CreateInstance: cannot create instance while the application is quitting or changing state."
-                );
-                return null;
+                var handle = Addressables.LoadAssetAsync<GameObject>(address);
+                await handle.Task;
+                var go = handle.Result;
+                Addressables.Release(handle);
+                return go != null && go.TryGetComponent(typeof(T), out Component component)
+                    ? component as T : null;
             }
-
-            var asset = LoadAsset<T>();
-            return asset != null ? Object.Instantiate(asset) : null;
-        }
-
-        public static async Task<T> CreateInstanceAsync<T>() where T : Object
-        {
-            if (_applicationStateIsChanging)
+            else
             {
-                Debug.Log(
-                    "CreateInstanceAsync: cannot create instance while the application is quitting or changing state."
-                );
-                return null;
+                var handle = Addressables.LoadAssetAsync<T>(address);
+                var asset = handle.WaitForCompletion();
+                Addressables.Release(handle);
+                return asset;
             }
-
-            var asset = await LoadAssetAsync<T>();
-            return asset != null ? Object.Instantiate(asset) : null;
         }
 
         private static SingletonAttribute GetSingletonAttribute<T>()
@@ -116,6 +169,7 @@ namespace Myna.Unity.Singletons
             return typeof(T).GetCustomAttribute<SingletonAttribute>(false);
         }
 
+        #region Initialization
         [RuntimeInitializeOnLoadMethod]
         private static void InitializeOnLoad()
         {
@@ -148,5 +202,7 @@ namespace Myna.Unity.Singletons
             };
         }
 #endif
+        #endregion Initialization
+        #endregion Private Methods
     }
 }

@@ -7,6 +7,7 @@ namespace Myna.Unity.Singletons
     {
         private static T _instance;
 
+        #region Properties
         public T Instance
         {
             get => _instance;
@@ -14,6 +15,32 @@ namespace Myna.Unity.Singletons
         }
 
         public static bool IsInitialized => _instance != null;
+        #endregion
+
+        #region Public Methods
+        public static T GetOrCreateInstance()
+        {
+            if (_instance != null)
+            {
+                return _instance;
+            }
+
+            var instance = SingletonFactory.CreateBehaviour<T>();
+            SetInstance(instance);
+            return instance;
+        }
+
+        public static async Task<T> GetOrCreateInstanceAsync()
+        {
+            if (_instance != null)
+            {
+                return _instance;
+            }
+
+            var instance = await SingletonFactory.CreateBehaviourAsync<T>();
+            SetInstance(instance);
+            return instance;
+        }
 
         public static void SetInstance(T instance)
         {
@@ -23,28 +50,13 @@ namespace Myna.Unity.Singletons
             }
             _instance = instance;
         }
+        #endregion Public Methods
 
-        public static T GetOrCreateInstance()
-        {
-            if (_instance != null)
-            {
-                return _instance;
-            }
-
-            _instance = SingletonFactory.CreateInstance<T>();
-            return _instance;
-        }
-
-        public static async Task<T> InitializeAsync()
-        {
-            var instance = await SingletonFactory.CreateInstanceAsync<T>();
-            SetInstance(instance);
-            return instance;
-        }
-
+        #region MonoBehaviour Implementation
         protected virtual void Awake()
         {
             SetInstance(this as T);
         }
+        #endregion MonoBehaviour Implementation
     }
 }

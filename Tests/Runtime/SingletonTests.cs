@@ -1,10 +1,5 @@
 #if UNITY_INCLUDE_TESTS
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using UnityEngine;
-using UnityEngine.TestTools;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Myna.Unity.Singletons.Tests
@@ -36,6 +31,34 @@ namespace Myna.Unity.Singletons.Tests
 		public void InitBehaviourFromAddressables()
 		{
 			var instance = TestAddressableBehaviour.GetOrCreateInstance();
+			Assert.That(instance != null);
+		}
+
+		[Test]
+		public async void InitAssetFromResourcesAsync()
+		{
+			var instance = await TestResourceAsset.GetOrCreateInstanceAsync();
+			Assert.That(instance != null);
+		}
+
+		[Test]
+		public async void InitBehaviourFromResourcesAsync()
+		{
+			var instance = await TestResourceBehaviour.GetOrCreateInstanceAsync();
+			Assert.That(instance != null);
+		}
+
+		[Test]
+		public async void InitAssetFromAddressablesAsync()
+		{
+			var instance = await TestAddressableAsset.GetOrCreateInstanceAsync();
+			Assert.That(instance != null);
+		}
+
+		[Test]
+		public async void InitBehaviourFromAddressablesAsync()
+		{
+			var instance = await TestAddressableBehaviour.GetOrCreateInstanceAsync();
 			Assert.That(instance != null);
 		}
 	}
